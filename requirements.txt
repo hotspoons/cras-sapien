@@ -1,0 +1,16 @@
+argparse==1.4.0
+langchain-community==0.3.2
+langchain-core==0.3.11
+langchain-openai==0.2.2
+python-dotenv>=0.21.0
+deepmerge==2.0
+wheel>=0.44.0
+stpyv8==13.0.245.16
+oyaml==1.0
+pythonflow==0.3.0
+datamodel-code-generator==0.26.2
+networkx==3.4.2
+RestrictedPython==7.4
+orjson>=3.10,<4
+docker==7.1.0
+deepmerge==2.0

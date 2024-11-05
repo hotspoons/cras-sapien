@@ -1,0 +1,218 @@
+config:
+  schema_version: '0.0.1'
+  a: 1
+  b: [a,b,c]
+
+automata:
+  - name: high level requirements
+    automata_type: STEP
+    op: GENERATE
+    enabled: true
+    system_prompt: |
+        Your job is to gather requirements for a program based on user input, and format those requirements
+        into a machine-readable (JSON) data structure that can be used by downstream tasks to write software. 
+        This data structure will have the following format (Rust/axum-based program is for illustration purposes 
+        only):
+
+        ```json
+        {
+          "language": "Rust",
+          "build_container_image": "rust:latest",
+          "dependencies": {
+            "clap": {
+              "version":"4.4.0",
+              "features": ["derive", "env"]
+            },
+            "axum": "0.6.20",
+            "dotenv": "0.15.0",
+            "image": "0.24.7",
+            "fast_image_resize": "2.7.3",
+            "aws-sdk-s3": "0.30.0",
+            "serde": {
+              "version":"1.0.100",
+              "features": ["derive"]
+            }
+          },
+          "requirements": [
+            "Web API server must be written in a memory-safe language",
+            "Arguments should be provided on the command line for port, listening IP address, S3 bucket, and optionally AWS auth metadata if not running from AWS",
+            "This API must be able to convert and downscale images to `.png` format using SIMD acceleration if available",
+            "The primary use of this API will be for clients to specify paths to images, which will then be downloaded from an AWS S3 bucket, and downscaled to the dimensions provided by the client",
+            "The main API endpoint will be available on the \"/convert\", with the required URL paramter `path`, which will be the path to the source image in a pre-configured S3 bucket; and the optional URL parameters `w` and `h` for scaling the image to a desired width, height, or both, but automatically scale for aspect ratio when only one dimension is provided",
+            "Unit test coverage should be above 80%"
+          ],
+          "status": "OK",
+          "message": "Completed initial design notes, no further clarification necessary",
+          "data":{
+            "any": "Arbitrary data"
+          },
+          "follow_up": null
+        }
+        ```
+
+        The field values should be self-explanatory, but to reiterate, the `build_container_field` must be a 
+        valid container image available on Docker hub (or specify the container registry URL as a prefix if
+        the image is not available on Docker hub) to build and run the application; the `language` field must be
+        one of the following languages, which ever is best suited for the task: 
+         - Rust
+         - C
+         - C++
+         - Java
+         - Kotlin
+         - Go
+         - Python
+         - JavaScript
+         - Mojo
+         - Zig
+         - Bash
+
+         And the `dependencies` field should map cleanly to the target platform's defacto package management
+         configuration file's data structures.
+
+         Any status, pertinent messages or follow-up questions should be provided on the appropriate properties 
+         in the response payload. Any other arbitrary structured data pertient to the requirements (for example,
+         initial content for a website) should be provided on the `data` property.
+
+         If you are missing data that would be required to provide a complete response, please ask a question
+         on the `follow_up` property, otherwise set it to null if no clarification is required.
+
+        Respond only with valid JSON, *do not* use formatting markup - "```json" should appear nowhere in the response
+        unless it is within a README file.
+
+  - name: project loop
+    op: PASSTHROUGH
+    needs: ['high level requirements']
+    automata_type: GRAPH
+    max_iterations: 5
+
+  - name: generate project
+    parent_id: project loop
+    automata_type: STEP
+    op: GENERATE
+    enabled: true
+    output_handler: native::file_tree_output_handler
+    user_prompt: |
+        {% set error_data = graph_data.fetch_last_data_by_id('build project') %}
+        {% if error_data %}
+        {% set error_data = error_data.output_data %}
+        {% set last_project_data = graph_data.fetch_last_data_by_id('generate project').output_data %}
+        The project failed to build. These are the errors that occurred during the last
+        build:
+
+        ```shell
+        {% if 'build_output' in error_data %}
+        {{ error_data['build_output'] | join('\n') }}
+        {% endif %}
+        ```
+
+        If you are struggling with version errors, feel free to expermient by providing broader version
+        numbers for dependencies, or no version numbers at all.
+
+        This is the last project contents you provided. Please address the errors in the build log;
+        summarize the fixes you made in the `NOTES.md` file, then provide a complete file
+        system in response.
+        
+        Use the following project manifest to build the project:
+        ```json
+        {{ last_project_data | tojson(indent=2) }}
+        ```
+        {% else %}
+        Use the following project manifest to build the project:
+        ```json
+        {{ data | tojson(indent=2) }}
+        ```
+        {% endif %}
+        Respond in pure JSON, no Markdown formatting please.
+
+    system_prompt: |
+        Your job is to take a project manifest with high level requirements for the project, and generate a complete
+        project that will be compiled in a downstream task using the build container in the manifest.
+
+        The manifest must be convered into a configuration file for the defacto package manager of the target 
+        language. As an example, you will receive a manifest file that looks like this:
+        ```json
+        {
+          "language": "Rust",
+          "build_container_image": "rust:latest",
+          "dependencies": {
+            "clap": {
+              "version":"4.4.0",
+              "features": ["derive", "env"]
+            },
+            "axum": "0.6.20",
+            "dotenv": "0.15.0",
+            "image": "0.24.7",
+            "fast_image_resize": "2.7.3",
+            "aws-sdk-s3": "0.30.0",
+            "serde": {
+              "version":"1.0.100",
+              "features": ["derive"]
+            }
+          },
+          "requirements": [
+            "Web API server must be written in a memory-safe language",
+            "Arguments should be provided on the command line for port, listening IP address, S3 bucket, and optionally AWS auth metadata if not running from AWS",
+            "This API must be able to convert and downscale images to `.png` format using SIMD acceleration if available",
+            "The primary use of this API will be for clients to specify paths to images, which will then be downloaded from an AWS S3 bucket, and downscaled to the dimensions provided by the client",
+            "The main API endpoint will be available on the `/convert`, with the required URL paramter `path`, which will be the path to the source image in a pre-configured S3 bucket; and the optional URL parameters `w` and `h` for scaling the image to a desired width, height, or both, but automatically scale for aspect ratio when only one dimension is provided",
+            "Unit test coverage should be above 80%"
+          ],
+          "status": "OK",
+          "message": "Completed initial design notes, no further clarification necessary",
+          "data":{
+            "any": "Arbitrary data"
+          },
+          "follow_up": null
+        }
+        ```
+        You will return a data structure representing a file system from the root of the project (denoted with a 
+        `.`), with the contents of each file that comprises the project. The dictionary keys are file or folder 
+        names; and if it is a file, it will have string contents, otherwise it will have a nested dictionary 
+        representing child files and folders. Please ensure the following are always generated with every
+        request:
+         - `README.md` file, describing how to build and run the project locally
+         - `.gitignore` file appropriate for the type of project, in the root of the file system
+         - `NOTES.md` file with any notes detailing design choices made in the codebase, and any fixes applied
+         - `Dockerfile` file, containing a valid Dockerfile to copy all project files in the current folder to the container, then build, test, and run the project
+
+        Messages, follow-up questions, and status should be provided in a file in the root of the file system
+        named `response.json`, and should follow the following format:
+        ```json
+        {
+          "status": "OK",
+          "message": "Completed first pass",
+          "follow_up": null
+        }
+        ```
+        A partial example is as follows - please provide a complete response based on the manifest and
+        requirements provided:
+
+        ```json
+        {
+          ".": {
+            "Cargo.toml": "[package]\nname = "image-service"\nversion = "0.1.0"\nedition = "2021"\n\n# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html\n\n[dependencies]\nimage = "0.24.7"\nfast_image_resize = "2.7.3"\nfutures = "0.3"\ntokio = { version = "1.0", features = ["full"] }\ntower = { version = "0.4", features = ["util"] }\naxum = "0.6.20"\nclap = { version = "4.4.0", features = ["derive", "env"] }\nlazy_static = "1.4.0"\ndotenv = "0.15.0"\nstrum = "0.25"\nstrum_macros = "0.25"\naws-config = "0.56.0"\naws-sdk-s3 = "0.30.0"\nasync_once = "0.2.6"\nfax = "0.2.0"\ntiff = "0.9.0"\nserde = { version = "1.0.100", features = ["derive"] }\nserde_json = "1.0.100"\nlog = "0.4.20"\npretty_env_logger = "0.5.0""
+            "Dockerfile": "FROM rust:latest\n# Application's name is "image-service"\nWORKDIR /usr/src/app\nCOPY . ./\nRUN rustup component add clippy &&     cargo test &&     cargo clippy --message-format=json &> clippy-report.json &&     cargo install --path . &&     cp $CARGO_HOME/bin/image-service /usr/bin/image-service\nENV TZ="America/New_York"\nCMD image-service",
+            "src": {
+              "main.rs": "use image_service::{handlers, config::CONFIG};\nuse axum::{\n    routing::get, Router,\n};\nuse std::net::SocketAddr;\nextern crate pretty_env_logger;\n#[macro_use] \nextern crate log;\n\n#[tokio::main]\nasync fn main() {\n    dotenv::dotenv().ok();\n    if let Err(e) = pretty_env_logger::try_init_timed() {\n        eprintln!("Could not initialize logger, bailing {}", e);\n        panic!("Good bye!")\n    };\n    let app = Router::new()\n        .route("/convert", get(handlers::convert));\n    let addr = SocketAddr::from(([127, 0, 0, 1], CONFIG.port));\n    info!("Starting server on port {}", CONFIG.port.to_string());\n    axum::Server::bind(&addr).serve(app.into_make_service()).await.unwrap();\n}",
+              "image_handling.rs": "use std::fs;\nuse std::io::{Cursor, BufWriter};\nuse std::num::NonZeroU32;\nuse std::time::SystemTime;\nuse fax::{decoder, decoder::pels, Color};\n\nuse image::{ImageError, ImageEncoder, ColorType, DynamicImage, GrayImage};\nuse image::codecs::png::PngEncoder;\nuse image::io::Reader as ImageReader;\nuse fast_image_resize as fr;\nuse tiff::decoder::Decoder;\nuse tiff::tags::Tag;\nuse crate::request_params::ImageParams;\n\nfn resize_dyn_img_to_png_bytes(img: DynamicImage, image_params: &ImageParams) -> Result<Vec<u8>, ImageError> {\n    let now: SystemTime = SystemTime::now();\n    let mut image_data = BufWriter::new(Cursor::new(Vec::new()));\n    let mut h = image_params.h.unwrap_or(0) as u32;//... And complete the project"
+            }
+          }
+        }
+        ```
+
+        You may be provided logging output from the Docker build/test process, along with source code from the previous
+        attempt - if this occurs, your initial attempt didn't work and you will need to fix the code so the Docker
+        build/test process completes successfully.
+        
+        Any status, pertinent messages or follow-up questions should be provided in the `response.json` file.
+
+        Respond only with valid JSON, *do not* use formatting markup - "```json" should appear nowhere in the response
+        unless it is within a README file.
+        
+  - name: build project
+    parent_id: project loop
+    needs: ['generate project']
+    automata_type: STEP
+    op: DATA_PROCCESS
+    enabled: true
+    output_handler: native::docker_build_output_handler
