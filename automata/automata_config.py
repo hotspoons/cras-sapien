@@ -67,6 +67,9 @@ class AutomataConfig:
     graph_id: Optional[str] = None
     # If disabled, inputs and outputs will be directly connected and the node bypassed
     enabled: Optional[bool] = True
+    # Initial enabled state, will be used to reset the enablement state so graphs can 
+    # turn steps on and off
+    initial_enabled_state: bool = True
     # If enabled, assume a socket is present and announce; wait for input; and return output
     socket: Optional[bool] = False
     # If allow failure is true, downstream jobs will execute and ignore
@@ -95,10 +98,12 @@ class AutomataConfig:
         
     @classmethod
     def from_dict(cls, args):
-        return cls(**{
+        inst = cls(**{
             k: v for k, v in args.items() 
             if k in inspect.signature(cls).parameters
         })
+        inst.initial_enabled_state = inst.enabled
+        return inst
     
 @dataclass(kw_only=True)
 class AutomataDataProcessorConfig(AutomataConfig):

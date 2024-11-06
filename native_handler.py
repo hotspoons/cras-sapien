@@ -19,6 +19,7 @@ class NativeHandler(Handler):
     DATAS_KEY = 'datas'
     INPUT_TEXT_KEY = 'input_text'
     GRAPH_DATA_KEY = 'graph_data'
+    STEP_ENABLEMENT_GRAPH_KEY = 'step_enablement_graph'
     
     CALLBACKS: dict[str, Callable[[str, list[StepData], list[StepData], StepData, dict, str], None]] = {}
     
@@ -70,7 +71,7 @@ class NativeHandler(Handler):
                 out_data = json.loads(input)
                 if not isinstance(out_data, dict):
                     out_data = {
-                        'data': out_data
+                        NativeHandler.DATA_KEY: out_data
                     }
                 step_data.output_data = out_data
             except Exception as e:

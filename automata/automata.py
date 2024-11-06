@@ -263,6 +263,7 @@ class AutomataGraph:
         generations: list = [sorted(generation) for generation in 
                              topological_generations(graph)]
         automatons: list[Automata] = []
+        # TODO - reset enabled/disabled status for au
         stop = False
         while len(generations) > 0 and stop == False:
             automatons = []
@@ -274,7 +275,7 @@ class AutomataGraph:
                         iteration_tree, iteration
                     )
                 automatons.append(automata)
-            self._execute_generation(automatons, iteration, iteration_tree, id)
+            self._execute_generation(automatons, iteration, iteration_tree, id, graph_id)
             for automaton in automatons:
                 if automaton.step_data.success == False:
                     stop = True
@@ -284,11 +285,16 @@ class AutomataGraph:
                 if graph_automaton_config.max_iterations > 0 and \
                     iteration <= graph_automaton_config.max_iterations:
                     return self.run_graph(iteration, iteration_tree, graph_id, initial_input)
+            for automaton in automatons:
+                if automaton.automata_config.automata_type == AutomataType.GRAPH:
+                    self._reset_graph_enablement(graph_id)
+                    
+                    pass
             initial_input = None
         return automatons
     
     def _execute_generation(self, automatons: list[Automata], iteration: int, 
-                            iteration_tree: list[int], id: str):
+                            iteration_tree: list[int], id: str, graph_id: str):
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             subgraph_futures = []
             tree = self._get_iteration_tree(iteration_tree, iteration)
@@ -303,6 +309,10 @@ class AutomataGraph:
                 if isinstance(automata.step_data.input_data, dict) and \
                     NativeHandler.GRAPH_DATA_KEY in automata.step_data.input_data:
                     automata.step_data.input_data.pop(NativeHandler.GRAPH_DATA_KEY)
+                if isinstance(automata.step_data.output_data, dict) and \
+                 NativeHandler.STEP_ENABLEMENT_GRAPH_KEY in automata.step_data.output_data:
+                    self._set_graph_enablement(automata.step_data.output_data[NativeHandler.STEP_ENABLEMENT_GRAPH_KEY],
+                                              graph_id)
                 self.graph_data.put_data(copy.deepcopy(automata.step_data))
             self._evaluate_automatons_state()
             for automata in automatons:
@@ -315,6 +325,23 @@ class AutomataGraph:
                     subgraph_futures.append(executor.submit(execute_subgraph))
             for future in concurrent.futures.as_completed(subgraph_futures):
                     future.result()
+    
+    def _reset_graph_enablement(self, graph_id: str):
+        graph_automatons = self.subgroups[graph_id] if graph_id == RESERVED_ROOT_ID else self.root_group
+        for automaton in graph_automatons:
+            automaton.automata_config.enabled = automaton.automata_config.initial_enabled_state
+        pass
+    def _set_graph_enablement(self, graph_enablement: dict[str, bool], graph_id: str):
+        graph_automatons = self.subgroups[graph_id] if graph_id == RESERVED_ROOT_ID else self.root_group
+        for step_id, enabled in graph_enablement.items():
+            for automaton in graph_automatons:
+                if automaton.automata_config.get_id() == step_id:
+                    automaton.automata_config.enabled = enabled
+        # TODO run post-processing step here using output data. Look for
+        # step configuration map to enable or disable any steps in the same
+        # or a higher level graph, and if present, set the enabled state so
+        # steps can be skipped while repeating a loop in the same graph
+        pass
     
     def _validate_and_build(self):
         ids: list[str] = [a.automata_config.get_id() for a in self.automatons]
