@@ -11,6 +11,7 @@ class InMemoryGraphData(GraphData):
     def __init__(self) -> None:
         self.data_store = InMemoryGraphData.data_store
         self.data_store_dict = InMemoryGraphData.data_store_dict
+        GraphData.register_graph_data(self)
         
     def fetch_all_data(self) -> list[StepData]:
         return copy.deepcopy(self.data_store)

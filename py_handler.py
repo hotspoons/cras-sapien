@@ -17,15 +17,15 @@ class PyHandler(Handler):
         PyHandler.handler_ref = handler_ref
     
     def invoke_handler(self, handler: str, input_step_datas: list[StepData], 
-                       all_step_datas: list[StepData], step_data: StepData, 
+                       step_data: StepData, 
                        config: dict, input: str = "") -> None:
         handler = self.format_handler(self.HANDLER_PREFIX, handler)
         locals = {
             'input_step_datas': json.loads(json.dumps(input_step_datas)),
-            'all_step_datas': json.loads(json.dumps(all_step_datas)),
             'step_data': json.loads(json.dumps(step_data)),
             'config': json.loads(json.dumps(config)),
-            'input': input
+            'input': input,
+            'graph_data': Handler.GRAPH_DATA
         }
         byte_code = compile_restricted(handler, '<inline handler>', 'exec')
         exec(byte_code, locals=locals)

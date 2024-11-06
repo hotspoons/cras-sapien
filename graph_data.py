@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -27,6 +28,7 @@ class StepData:
         })
 
 class GraphData:
+    
     @abstractmethod
     def fetch_all_data(self) -> list[StepData]:
         pass
@@ -51,3 +53,9 @@ class GraphData:
     @abstractmethod
     def put_data(self, step_data: StepData) -> None:
         pass
+    
+    
+    @staticmethod
+    def register_graph_data(instance: GraphData):
+        from handler import Handler
+        Handler.set_graph_data(instance)

@@ -7,7 +7,6 @@ deepmerge==2.0
 wheel>=0.44.0
 stpyv8==13.0.245.16
 oyaml==1.0
-pythonflow==0.3.0
 datamodel-code-generator==0.26.2
 networkx==3.4.2
 RestrictedPython==7.4

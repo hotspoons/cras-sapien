@@ -17,18 +17,18 @@ class JSHandler(Handler):
       JSHandler.handler_ref = handler_ref
    
    def invoke_handler(self, handler: str, input_step_datas: list[StepData], 
-                      all_step_datas: list[StepData], step_data: StepData, 
+                      step_data: StepData, 
                       config: dict, input: str = "") -> None:
       handler = self.format_handler(self.HANDLER_PREFIX, handler)
       with STPyV8.JSContext() as ctx:
                      out = """
          {handler};
-         JSON.stringify({handler_ref}({input_step_datas}, {all_step_datas}, {input}, {config}));
+         JSON.stringify({handler_ref}({input_step_datas}, {all_graph_data}, {input}, {config}));
                      """.format(handler_ref = self.handler_ref,
                                 input_step_datas=json.dumps(input_step_datas),
-                                all_step_datas=json.dumps(all_step_datas),
+                                all_graph_data=Handler.GRAPH_DATA.fetch_all_data(),
                                 input=json.dumps(input),
-                              config=json.dumps(self.automata_global_config), 
+                              config=json.dumps(config), 
                               handler=handler)
       step_data.text = out
       try:

@@ -46,7 +46,6 @@ class AutomataDependencies:
         self.automata_global_config = automata_global_config
         self.session_id = session_id
         self.input_step_datas: list[StepData] = []
-        self.all_step_datas: list[StepData] = []
         self.register_handlers(callbacks)
         
     def register_handlers(self, callbacks: dict[str, Callable[[str, list[StepData], list[StepData], StepData, dict, str], None]]) -> None:
@@ -79,7 +78,6 @@ class Automata:
         self.state: AutomataState = AutomataState.INITIALIZED
         self.step_data: StepData = None
         self.input_step_datas: list[StepData] = None
-        self.all_step_datas: list[StepData] = None
         self.handlers = dependencies.handlers
     def _get_user_prompt(self):
         if isinstance(self.automata_config, AutomataGeneratorConfig):
@@ -127,22 +125,20 @@ class Automata:
         for handler_prefix, handler_instance in self.handlers.items():
             if handler.startswith(handler_prefix):
                 handler_instance.invoke_handler(handler, self.input_step_datas,
-                                 self.all_step_datas, step_data,
-                                 self.automata_global_config, 
-                                 input)
+                                 step_data, self.automata_global_config, input)
                 return step_data
         raise Exception("No registered handler found named {}, returning step_data unchanged. " +
                         "The following native handlers are registered: {} - please check your configuration".format(
             handler, ", ".join(NativeHandler.CALLBACKS.keys())))
             
-    def set_input_datas(self, input_step_datas: list[StepData], all_step_datas: list[StepData], initial_input: str) -> None:
+    def set_input_datas(self, input_step_datas: list[StepData], initial_input: str) -> None:
         self.input_step_datas = input_step_datas
-        self.all_step_datas = all_step_datas
         step_data: StepData = StepData(start=datetime.now(), 
                                   automata_id=self.automata_config.get_id(),
                                   parent_id=self.automata_config.parent_id,
                                   session_id=str(self.dependencies.session_id),
                                   text=initial_input)
+        
         self.step_data = self._process_data(self._get_input_handler(), step_data, initial_input)
         
     def invoke(self) -> dict:
@@ -256,8 +252,7 @@ class AutomataGraph:
         # For subgraph steps with no input, use the data from the parent graph's node
         if not automata_step_data and automata.automata_config.parent_id is not None:
             automata_step_data = [self.graph_data.fetch_data(automata.automata_config.parent_id, iteration_tree)]
-        automata.set_input_datas(automata_step_data, 
-                                 self.graph_data.fetch_all_data(), initial_input)
+        automata.set_input_datas(automata_step_data, initial_input)
 
     def run_graph(self, iteration: int = 0, 
                   iteration_tree: list[int] = [], graph_id: str = RESERVED_ROOT_ID, 

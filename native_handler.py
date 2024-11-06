@@ -18,13 +18,9 @@ class NativeHandler(Handler):
     DATAS_KEY = 'datas'
     INPUT_TEXT_KEY = 'input_text'
     GRAPH_DATA_KEY = 'graph_data'
-    GRAPH_DATA: GraphData
     
     CALLBACKS: dict[str, Callable[[str, list[StepData], list[StepData], StepData, dict, str], None]] = {}
     
-    @staticmethod
-    def set_graph_data(graph_data: GraphData):
-        NativeHandler.GRAPH_DATA = graph_data
    
     def __init__(self,):
         super().__init__()
@@ -36,8 +32,7 @@ class NativeHandler(Handler):
    
     def register_default_handlers(self):
         def default_user_prompt_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+                             step_data: StepData, config: dict, input: str):
             try:
                 if not '{{' + NativeHandler.INPUT_TEXT_KEY + '}}' in input:
                     input = '{{' + NativeHandler.INPUT_TEXT_KEY + '}}\n' + input 
@@ -48,8 +43,7 @@ class NativeHandler(Handler):
                 
         # By default, merge all upstream data into a dictionary, and combine text
         def default_input_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+                             step_data: StepData, config: dict, input: str):
             try:
                 in_data = {
                     NativeHandler.INPUT_TEXT_KEY: step_data.text,
@@ -70,8 +64,7 @@ class NativeHandler(Handler):
                 pass
             
         def default_output_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+                             step_data: StepData, config: dict, input: str):
             try:
                 out_data = json.loads(input)
                 if not isinstance(out_data, dict):
@@ -84,8 +77,7 @@ class NativeHandler(Handler):
         
         
         def default_system_prompt_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+                             step_data: StepData, config: dict, input: str):
             try:
                 if not '{{' + NativeHandler.INPUT_TEXT_KEY + '}}' in input:
                     input = '{{' + NativeHandler.INPUT_TEXT_KEY + '}}\n' + input 
@@ -108,16 +100,15 @@ class NativeHandler(Handler):
         pass
     
     @staticmethod
-    def register_callback(name: str, callback: Callable[[str, list[StepData], list[StepData], StepData, dict, str], None]):
+    def register_callback(name: str, callback: Callable[[str, list[StepData], StepData, dict, str], None]):
         NativeHandler.CALLBACKS[name] = callback
     
     def invoke_handler(self, handler: str, input_step_datas: list[StepData], 
-                       all_step_datas: list[StepData], step_data: StepData, 
+                       step_data: StepData, 
                        config: dict, input: str = "") -> None:
         handler = self.format_handler(self.HANDLER_PREFIX, handler)
         if handler in self.CALLBACKS.keys():
             self.CALLBACKS[handler](input_step_datas=input_step_datas, 
-                                    all_step_datas=all_step_datas,
                                     step_data=step_data, 
                                     config=config, 
                                     input=input)

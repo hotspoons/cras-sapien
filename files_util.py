@@ -8,13 +8,10 @@ from native_handler import NativeHandler
 class FileTree:
     app_config = Config.get_instance()  
     
-    def file_tree_output_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+    def file_tree_output_handler(input_step_datas: list[StepData], step_data: StepData, config: dict, input: str):
         
         NativeHandler.CALLBACKS[NativeHandler.DEFAULT_OUTPUT_HANDLER](
             input_step_datas=input_step_datas, 
-            all_step_datas=all_step_datas,
             step_data=step_data, 
             config=config, 
             input=input)

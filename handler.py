@@ -17,7 +17,7 @@ class Handler:
     
     @abstractmethod
     def invoke_handler(self, handler: str, input_step_datas: list[StepData], 
-                       all_step_datas: list[StepData], step_data: StepData, 
+                       step_data: StepData, 
                        config: dict, input: str) -> None:
         pass
     
@@ -25,3 +25,8 @@ class Handler:
         return handler.removeprefix(prefix)
         
       
+    from graph_data import GraphData
+    GRAPH_DATA: GraphData
+    @staticmethod
+    def set_graph_data(graph_data: GraphData):
+        Handler.GRAPH_DATA = graph_data

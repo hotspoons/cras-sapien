@@ -11,8 +11,7 @@ class DockerExecutor:
     app_config = Config.get_instance()
 
     def docker_build_output_handler(input_step_datas: list[StepData], 
-                             all_step_datas: list[StepData], step_data: StepData, 
-                             config: dict, input: str):
+                             step_data: StepData, config: dict, input: str):
         docker_executor = DockerExecutor()
         logs: list[dict] = []
         try:
