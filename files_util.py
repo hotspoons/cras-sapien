@@ -1,12 +1,13 @@
 
-import os
+import os, logging
 
 from config import Config
 from graph_data import StepData
 from native_handler import NativeHandler
 
 class FileTree:
-    app_config = Config.get_instance()  
+    app_config = Config.get_instance()
+    logger = logging.getLogger()
     
     def file_tree_output_handler(input_step_datas: list[StepData], step_data: StepData, config: dict, input: str):
         
@@ -34,6 +35,6 @@ class FileTree:
                 path = base_path + '/' + name if name != '.' else base_path
                 FileTree.write_tree(contents_or_subfolder, path)
             else:
-                print("Unknown type found in file tree: {}".format(contents_or_subfolder))
+                FileTree.logger("Unknown type found in file tree: {}".format(contents_or_subfolder))
                 
                     

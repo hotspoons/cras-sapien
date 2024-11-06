@@ -15,7 +15,9 @@ sells toast at a toast restaurant. We will need a "Home", "About", "Menu",
 "Contact Us", and "Locations" sections, with expected sub-pages. 
 
 This should use a modern UI framework like React, along with nice looking UI
-components; something like Material UI but maybe less derivative.
+components; something like Material UI but maybe less derivative. Please make 
+up content for the website, including a "History of toast" page, and some other
+fun stuff.
 
 Respond in pure JSON, no Markdown formatting please.
 

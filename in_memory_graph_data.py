@@ -34,10 +34,10 @@ class InMemoryGraphData(GraphData):
     def fetch_last_data_by_id(self, id: str) -> StepData:
         items = self.fetch_all_data_by_id(id)
         if len(items) > 0:
-            return items[0]
+            return items[-1]
         return None
     def fetch_first_data_by_id(self, id: str) -> StepData:
-        items = reversed(self.fetch_all_data_by_id(id))
+        items = self.fetch_all_data_by_id(id)
         if len(items) > 0:
             return items[0]
         return None
