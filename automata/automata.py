@@ -144,6 +144,7 @@ class Automata:
     def invoke(self) -> dict:
         self.state = AutomataState.IN_PROGRESS
         if self.automata_config.enabled == False or self.automata_config.op == Ops.PASSTHROUGH:
+            # TODO - don't allow nodes with multiple upstream dependencies to be disabled, otherwise this breaks
             self.step_data.output_data = self.step_data.input_data
             self.state = AutomataState.COMPLETED
             return
@@ -151,6 +152,7 @@ class Automata:
             # TODO think through this design more
             if self.automata_config.socket:
                 self.socket.send(self.config.socket_announce_message.format(session_id=self.dependencies.session_id))
+                # TODO - we may need to make this configurable, to optionally wait on a socket
                 self.step_data.text = self.socket.recv()
                 # TODO input processor for socket
             if self.automata_config.op == Ops.GENERATE:
@@ -164,7 +166,7 @@ class Automata:
             self.state = AutomataState.COMPLETED
             self.step_data.end = datetime.now()
             if self.automata_config.socket:
-                # TODO 
+                # TODO - this should announce the step and iteration that was just run
                 self.socket.send(self._process_data(self._get_output_handler(), self.step_data).text)
         except Exception as e:
             self.config.logger.error(e)

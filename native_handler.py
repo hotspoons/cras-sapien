@@ -8,6 +8,7 @@ from handler import Handler
 from jinja2 import Template
 
 class NativeHandler(Handler):
+    # TODO - native handler's shouldn't need a prefix, just the name they are registered with
     HANDLER_PREFIX: str = 'native::'
     DEFAULT_INPUT_HANDLER: str = 'default_input_handler'
     DEFAULT_OUTPUT_HANDLER: str = 'default_output_handler'

@@ -73,7 +73,6 @@ class Config():
             return {'required': req}
 
     def load_config_file(self, path: str) -> dict|list|str:
-        print(path)
         with open(path) as f:
             if path.lower().endswith('.json'):
                 return json.load(f)
