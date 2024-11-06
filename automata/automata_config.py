@@ -141,6 +141,9 @@ class AutomataDataProcessorConfig(AutomataConfig):
 
 @dataclass(kw_only=True)
 class AutomataGeneratorConfig(AutomataDataProcessorConfig):
+    # Override the default model configured for this service; no guarantees 
+    # this will work, but allows flexibility
+    model: Optional[str] = None
     # For generative nodes, provide a system prompt. 
     # Used with GENERATE op
     system_prompt: Optional[str] = ""

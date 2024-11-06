@@ -111,6 +111,10 @@ class Automata:
             handler = self.automata_config.output_handler
             return handler if handler else NativeHandler.get_handler_prefix() + NativeHandler.DEFAULT_OUTPUT_HANDLER
         return NativeHandler.get_handler_prefix() + NativeHandler.DEFAULT_OUTPUT_HANDLER
+    def _get_model(self):
+        if isinstance(self.automata_config, AutomataGeneratorConfig):
+            return self.automata_config.model
+        return None
     # TODO wire up socket data handlers
     def _get_socket_input_handler(self):
         return None
@@ -183,7 +187,7 @@ class Automata:
         self.config.logger.debug("System prompt: %s", system_prompt_data.text)
         self.config.logger.debug("User prompt: %s", user_prompt_data.text)
         
-        content = self.sapient.invoke_llm(system_prompt_data.text, user_prompt_data.text)
+        content = self.sapient.invoke_llm(system_prompt_data.text, user_prompt_data.text, self._get_model())
         user_prompt_data.text = content
         self.step_data = self._process_data(self._get_output_handler(), user_prompt_data, content)
         

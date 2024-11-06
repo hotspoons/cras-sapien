@@ -105,9 +105,6 @@ automata:
         {% endif %}
         ```
 
-        If you are struggling with version errors, feel free to expermient by providing broader version
-        numbers for dependencies, or no version numbers at all.
-
         This is the last project contents you provided. Please address the errors in the build log;
         summarize the fixes you made in the `NOTES.md` file, then provide a complete file
         system in response.
@@ -116,6 +113,10 @@ automata:
         ```json
         {{ last_project_data | tojson(indent=2) }}
         ```
+        
+        If the build failed due to a dependency version not being found, *always* change the version
+        number of the failing dependency.
+
         {% else %}
         Use the following project manifest to build the project:
         ```json
