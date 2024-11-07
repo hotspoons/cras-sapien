@@ -21,7 +21,8 @@ class Handler:
                        config: dict, input: str) -> None:
         pass
     
-    def format_handler(self, prefix: str, handler: str) -> str:
+    @staticmethod
+    def format_handler(prefix: str, handler: str) -> str:
         return handler.removeprefix(prefix)
         
       

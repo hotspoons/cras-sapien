@@ -127,6 +127,14 @@ class Automata:
                 handler_instance.invoke_handler(handler, self.input_step_datas,
                                  step_data, self.automata_global_config, input)
                 return step_data
+        # If the callback wasn't registered with a 'native::' prefix, still allow it to be invoked if it is registered
+        if handler in NativeHandler.CALLBACKS.keys():
+            NativeHandler.CALLBACKS[handler](
+            input_step_datas=self.input_step_datas, 
+            step_data=step_data, 
+            config=self.automata_global_config, 
+            input=input)
+            return step_data
         raise Exception("No registered handler found named {}, returning step_data unchanged. " +
                         "The following native handlers are registered: {} - please check your configuration".format(
             handler, ", ".join(NativeHandler.CALLBACKS.keys())))
@@ -327,7 +335,7 @@ class AutomataGraph:
                     future.result()
     
     def _reset_graph_enablement(self, graph_id: str):
-        graph_automatons = self.subgroups[graph_id] if graph_id == RESERVED_ROOT_ID else self.root_group
+        graph_automatons = self.subgroups[graph_id] if graph_id != RESERVED_ROOT_ID else self.root_group
         for automaton in graph_automatons:
             automaton.automata_config.enabled = automaton.automata_config.initial_enabled_state
         pass
@@ -336,13 +344,24 @@ class AutomataGraph:
         for step_id, enabled in graph_enablement.items():
             for automaton in graph_automatons:
                 if automaton.automata_config.get_id() == step_id:
+                    if len(automaton.automata_config.needs) > 1:
+                        raise Exception('Cannot change the enablement status of a graph node with multiple upstream tasks')
                     automaton.automata_config.enabled = enabled
-        # TODO run post-processing step here using output data. Look for
-        # step configuration map to enable or disable any steps in the same
-        # or a higher level graph, and if present, set the enabled state so
-        # steps can be skipped while repeating a loop in the same graph
         pass
     
+    def _check_if_handler_exists(self, handler_type: str, handler: str, errors: list) -> bool:
+        if handler:
+            exists = False
+            for cls in Handler.__subclasses__():
+                prefix = cls.get_handler_prefix()
+                if handler.startswith(prefix):
+                    exists = True
+                    break
+            if NativeHandler.format_handler('', handler) in NativeHandler.CALLBACKS.keys():
+                exists = True
+            if exists == False: 
+                errors.append('The {} was not found registered with the runtime, or as a scripting handler prefix: {}'.format(handler_type, handler))
+            
     def _validate_and_build(self):
         ids: list[str] = [a.automata_config.get_id() for a in self.automatons]
         dups = set([x for x in ids if ids.count(x) > 1])
@@ -353,6 +372,15 @@ class AutomataGraph:
         if RESERVED_ROOT_ID in ids:
             errors.append('{} is a reserved ID for the root of the graph, please choose another name/id'.format(RESERVED_ROOT_ID))
         for automata in self.automatons:
+            config = automata.automata_config 
+            if config.enabled == False and len(config.needs) > 1:
+                errors.append('Graph steps with multiple inputs cannot be disabled')
+            if isinstance(config, AutomataGeneratorConfig):
+                self._check_if_handler_exists('system prompt handler', config.system_prompt_handler, errors)
+                self._check_if_handler_exists('user prompt handler', config.user_prompt_handler, errors)
+            if isinstance(config, AutomataDataProcessorConfig):
+                self._check_if_handler_exists('input handler', config.input_handler, errors)
+                self._check_if_handler_exists('output handler', config.output_handler, errors)
             parent_id = automata.automata_config.parent_id
             if parent_id != None:
                 if not parent_id in ids:
